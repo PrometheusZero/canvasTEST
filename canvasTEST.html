@@ -22,8 +22,7 @@
 	<script src="resources/jquery-2.1.1.js"></script>
 	<script type="text/javascript">
 		
-		//VIDEO 12, from start.
-		//use this as base for cannon fodder experiement
+		//VIDEO 13, from 4mins in.
 		
 		var ctx = document.getElementById('canv').getContext('2d');
 		ctx.font = '30px Arial';
@@ -52,7 +51,8 @@
 			pressingDown: false,
 			pressingUp: false,
 			pressingLeft: false,
-			pressingRight: false
+			pressingRight: false,
+			aimAngle: 0
 		};
 		
 		var enemyList = {};
@@ -91,7 +91,11 @@
 				id:id,
 				width:width,
 				height:height,
-				color:'red'
+				color:'red',
+				//
+				aimAngle:0,
+				atkSpd:1,
+				attackCounter:0
 			};
 			enemyList[id] = enemy3;
 		};
@@ -158,13 +162,16 @@
 			bulletList[id] = asd;
 		};
 		
-		randomlyGenerateBullet = function(){
-			var x = player.x;
-			var y = player.y;
+		generateBullet = function(actor,overwriteAngle){
+			var x = actor.x;
+			var y = actor.y;
 			var height = 10;
 			var width = 10;
 			var id = Math.random();
-			var angle = Math.random()*360;
+			var angle = actor.aimAngle;
+			if(overwriteAngle !== undefined){
+				angle = overwriteAngle;
+			}
 			var spdX = Math.cos(angle/180*Math.PI)*5;
 			var spdY = Math.sin(angle/180*Math.PI)*5;
 			Bullet(id,x,y,spdX,spdY,width,height);
@@ -201,37 +208,47 @@
 			ctx.fillRect(something.x-something.width/2,something.y-something.height/2,something.width,something.height);
 			ctx.restore();
 		};
-		
-		document.onmousemove = function(mouse){
-			/*
-			var mouseX = mouse.clientX - document.getElementById('canv').getBoundingClientRect().left;
-			var mouseY = mouse.clientY - document.getElementById('canv').getBoundingClientRect().top;
-			
-			if(mouseX < player.width/2){
-				mouseX = player.width/2;
-			}
-			if(mouseX > WIDTH - player.width/2){
-				mouseX = WIDTH - player.width/2;
-			}
-			if(mouseY < player.height/2){
-				mouseY = player.height/2;
-			}
-			if(mouseY > HEIGHT - player.height/2){
-				mouseY = HEIGHT - player.height/2;
-			}
-			
-			
-			player.x = mouseX;
-			player.y = mouseY;
-			*/
-		};
-
+	
 		document.onclick = function(mouse){
-			if(player.attackCounter > 25){
-				randomlyGenerateBullet();
-				player.attackCounter = 0;
+			performAttack(player);
+		}
+		
+		performAttack = function(actor){
+			if(actor.attackCounter > 25){
+				actor.attackCounter = 0;
+				generateBullet(actor);
 			}
 		}
+		
+		document.oncontextmenu = function(mouse){
+			performSpecialAttack(player);
+		}
+		
+		performSpecialAttack = function(actor){
+			if(actor.attackCounter > 50){
+				/*
+				for(var i=0;i<360;i++){
+					generateBullet(player,i);
+				}
+				*/
+				generateBullet(actor,actor.aimAngle-5);
+				generateBullet(actor);
+				generateBullet(actor,actor.aimAngle+5);
+				actor.attackCounter = 0;
+			}
+			mouse.preventDefault();
+		}
+	
+		document.onmousemove = function(mouse){
+			var mouseX = mouse.clientX - document.getElementById('canv').getBoundingClientRect().left;
+			var mouseY = mouse.clientY - document.getElementById('canv').getBoundingClientRect().top;
+
+			mouseX -= player.x;
+			mouseY -= player.y;
+			
+			player.aimAngle = Math.atan2(mouseY,mouseX) / Math.PI * 180;
+		};
+
 		
 		document.onkeydown = function(event){
 			if(event.keyCode === 68){		//d
