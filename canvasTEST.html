@@ -52,7 +52,8 @@
 			pressingDown: false,
 			pressingUp: false,
 			pressingLeft: false,
-			pressingRight: false
+			pressingRight: false,
+			aimAngle:0
 		};
 		
 		var enemyList = {};
@@ -91,7 +92,8 @@
 				id:id,
 				width:width,
 				height:height,
-				color:'red'
+				color:'red',
+
 			};
 			enemyList[id] = enemy3;
 		};
@@ -158,13 +160,19 @@
 			bulletList[id] = asd;
 		};
 		
-		randomlyGenerateBullet = function(){
-			var x = player.x;
-			var y = player.y;
+		randomlyGenerateBullet = function(actor, aimOverwrite){
+			var x = actor.x;
+			var y = actor.y;
 			var height = 10;
 			var width = 10;
 			var id = Math.random();
-			var angle = Math.random()*360;
+			
+			var angle;
+			if(aimOverwrite !== undefined){
+				angle = aimOverwrite;
+			}else{
+				angle = actor.aimAngle
+			}
 			var spdX = Math.cos(angle/180*Math.PI)*5;
 			var spdY = Math.sin(angle/180*Math.PI)*5;
 			Bullet(id,x,y,spdX,spdY,width,height);
@@ -203,34 +211,32 @@
 		};
 		
 		document.onmousemove = function(mouse){
-			/*
 			var mouseX = mouse.clientX - document.getElementById('canv').getBoundingClientRect().left;
 			var mouseY = mouse.clientY - document.getElementById('canv').getBoundingClientRect().top;
 			
-			if(mouseX < player.width/2){
-				mouseX = player.width/2;
-			}
-			if(mouseX > WIDTH - player.width/2){
-				mouseX = WIDTH - player.width/2;
-			}
-			if(mouseY < player.height/2){
-				mouseY = player.height/2;
-			}
-			if(mouseY > HEIGHT - player.height/2){
-				mouseY = HEIGHT - player.height/2;
-			}
+			mouseX -= player.x;
+			mouseY -= player.y;
 			
-			
-			player.x = mouseX;
-			player.y = mouseY;
-			*/
+			player.aimAngle = Math.atan2(mouseY, mouseX) / Math.PI * 180;
 		};
 
 		document.onclick = function(mouse){
 			if(player.attackCounter > 25){
-				randomlyGenerateBullet();
+				randomlyGenerateBullet(player);
 				player.attackCounter = 0;
 			}
+		}
+		
+		document.oncontextmenu = function(mouse){ //on right click
+			if(player.attackCounter > 50){
+				
+				for(let angle = 0; angle < 360; angle+=5){
+					randomlyGenerateBullet(player,angle)
+				}
+				
+				player.attackCounter = 0;
+			}
+			mouse.preventDefault();
 		}
 		
 		document.onkeydown = function(event){
