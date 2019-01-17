@@ -35,26 +35,30 @@
 		var frameCount = 0;
 		
 		var score = 0;
+		var player;
 		
-		var player = {
-			x:50,
-			spdX:30,
-			y:40,
-			spdY:5,
-			name:'P',
-			hp:10,
-			width:20,
-			height:20,
-			color:'green',
-			//
-			atkSpd:1,
-			attackCounter:0,
-			pressingDown: false,
-			pressingUp: false,
-			pressingLeft: false,
-			pressingRight: false,
-			aimAngle:0
-		};
+		createPlayer = function(){
+			player = {
+				type:'player',
+				x:50,
+				spdX:30,
+				y:40,
+				spdY:5,
+				name:'P',
+				hp:10,
+				width:20,
+				height:20,
+				color:'green',
+				//
+				atkSpd:1,
+				attackCounter:0,
+				pressingDown: false,
+				pressingUp: false,
+				pressingLeft: false,
+				pressingRight: false,
+				aimAngle:0
+			};
+		}
 		
 		var enemyList = {};
 		var upgradeList = {};
@@ -84,6 +88,7 @@
 		
 		Enemy = function (id,x,y,spdX,spdY,width,height){
 			var enemy3 = {
+				type:'enemy',
 				x:x,
 				spdX:spdX,
 				y:y,
@@ -93,7 +98,10 @@
 				width:width,
 				height:height,
 				color:'red',
-
+				//
+				aimAngle:0,
+				atkSpd:1,
+				attackCounter:0
 			};
 			enemyList[id] = enemy3;
 		};
@@ -111,6 +119,7 @@
 		
 		Upgrade = function (id,x,y,spdX,spdY,width,height,category,color){
 			var asd = {
+				type:'upgrade',
 				x:x,
 				spdX:spdX,
 				y:y,
@@ -146,6 +155,7 @@
 		
 		Bullet = function (id,x,y,spdX,spdY,width,height){
 			var asd = {
+				type:'bullet',
 				x:x,
 				spdX:spdX,
 				y:y,
@@ -160,7 +170,7 @@
 			bulletList[id] = asd;
 		};
 		
-		randomlyGenerateBullet = function(actor, aimOverwrite){
+		GenerateBullet = function(actor, aimOverwrite){
 			var x = actor.x;
 			var y = actor.y;
 			var height = 10;
@@ -176,23 +186,52 @@
 			var spdX = Math.cos(angle/180*Math.PI)*5;
 			var spdY = Math.sin(angle/180*Math.PI)*5;
 			Bullet(id,x,y,spdX,spdY,width,height);
-		}
+		}		
 		
-		
-		updateEntity = function(something){
-			updateEntityPosition(something);
-			drawEntity(something);
+		updateEntity = function(entity){
+			updateEntityPosition(entity);
+			drawEntity(entity);
 		};
 		
-		updateEntityPosition = function(something){
-			something.x += something.spdX;
-			something.y += something.spdY;
+		updateEntityPosition = function(entity){
+			if(entity.type === 'player'){
+				if(player.pressingRight){
+					player.x += 10;
+				}
+				if(player.pressingLeft){
+					player.x -= 10;
+				}
+				if(player.pressingDown){
+					player.y += 10;
+				}
+				if(player.pressingUp){
+					player.y -= 10;
+				}
+				
+				//ispositionvalid
+				if(player.x < player.width/2){
+					player.x = player.width/2;
+				}
+				if(player.x > WIDTH - player.width/2){
+					player.x = WIDTH - player.width/2;
+				}
+				if(player.y < player.height/2){
+					player.y = player.height/2;
+				}
+				if(player.y > HEIGHT - player.height/2){
+					player.y = HEIGHT - player.height/2;
+				}
 			
-			if(something.x < 0 || something.x > HEIGHT){
-				something.spdX = -something.spdX;
-			}
-			if(something.y < 0 || something.y > WIDTH){
-				something.spdY = -something.spdY;
+			}else{
+				entity.x += entity.spdX;
+				entity.y += entity.spdY;
+				
+				if(entity.x < 0 || entity.x > HEIGHT){
+					entity.spdX = -entity.spdX;
+				}
+				if(entity.y < 0 || entity.y > WIDTH){
+					entity.spdY = -entity.spdY;
+				}
 			}
 		};
 		
@@ -203,10 +242,10 @@
 				&& rect2.y <= rect1.y + rect1.height;
 		};
 		
-		drawEntity = function(something){
+		drawEntity = function(entity){
 			ctx.save();
-			ctx.fillStyle = something.color;
-			ctx.fillRect(something.x-something.width/2,something.y-something.height/2,something.width,something.height);
+			ctx.fillStyle = entity.color;
+			ctx.fillRect(entity.x-entity.width/2,entity.y-entity.height/2,entity.width,entity.height);
 			ctx.restore();
 		};
 		
@@ -221,22 +260,28 @@
 		};
 
 		document.onclick = function(mouse){
-			if(player.attackCounter > 25){
-				randomlyGenerateBullet(player);
-				player.attackCounter = 0;
+			performAttack(player);
+		}
+		
+		performAttack = function(actor){
+		if(actor.attackCounter > 25){		//every 1 sec
+				GenerateBullet(actor);
+				actor.attackCounter = 0;
 			}
 		}
 		
 		document.oncontextmenu = function(mouse){ //on right click
-			if(player.attackCounter > 50){
-				
-				for(let angle = 0; angle < 360; angle+=5){
-					randomlyGenerateBullet(player,angle)
-				}
-				
-				player.attackCounter = 0;
-			}
+			performSpecialAttack(player);
 			mouse.preventDefault();
+		}
+		
+		performSpecialAttack = function(actor){
+		if(actor.attackCounter > 50){		//every 1 sec
+				GenerateBullet(actor,actor.aimAngle - 5);
+				GenerateBullet(actor,actor.aimAngle);
+				GenerateBullet(actor,actor.aimAngle + 5);
+				actor.attackCounter = 0;
+			}
 		}
 		
 		document.onkeydown = function(event){
@@ -263,33 +308,6 @@
 			}
 		};
 		
-		updatePlayerPosition = function(){
-			if(player.pressingRight){
-				player.x += 10;
-			}
-			if(player.pressingLeft){
-				player.x -= 10;
-			}
-			if(player.pressingDown){
-				player.y += 10;
-			}
-			if(player.pressingUp){
-				player.y -= 10;
-			}
-			
-			if(player.x < player.width/2){
-				player.x = player.width/2;
-			}
-			if(player.x > WIDTH - player.width/2){
-				player.x = WIDTH - player.width/2;
-			}
-			if(player.y < player.height/2){
-				player.y = player.height/2;
-			}
-			if(player.y > HEIGHT - player.height/2){
-				player.y = HEIGHT - player.height/2;
-			}
-		}
 		
 		update = function(){
 			ctx.clearRect(0,0,WIDTH,HEIGHT);
@@ -359,8 +377,7 @@
 				startNewGame();
 			}
 			
-			updatePlayerPosition();
-			drawEntity(player);
+			updateEntity(player);
 			ctx.fillText(player.hp + " Hp", 0,30);
 			ctx.fillText("Score: " + score, 200,30);
 		};
@@ -379,7 +396,7 @@
 		}
 		
 		
-		
+		createPlayer();
 		startNewGame();
 		
 		setInterval(update,40);
